@@ -1,0 +1,8 @@
+[package]
+name = "metro-bus-congestion-analysis"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+geojson = "0.24.1"
+tokio = { version = "1.39.3", features = ["full"] }
