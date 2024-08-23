@@ -4,6 +4,7 @@ use std::error::Error;
 struct CleanSegment {
     route_short_name: String,
     p20_kmh: f64,
+    geometry: geojson::Geometry
 }
 
 fn main() -> Result<(), Box<dyn Error + Sync + Send>> {
@@ -28,6 +29,7 @@ fn main() -> Result<(), Box<dyn Error + Sync + Send>> {
                     Some(CleanSegment {
                         route_short_name: route_short_name.to_string(),
                         p20_kmh,
+                        geometry: feature.geometry.unwrap().clone()
                     })
                 }
                 _ => None,
