@@ -1,5 +1,10 @@
-use geojson::{Feature, FeatureCollection, GeoJson, Geometry, JsonValue, Value};
+use geojson::{FeatureCollection, GeoJson, JsonValue};
 use std::error::Error;
+
+struct CleanSegment {
+    route_short_name: String,
+    p20_kmh: f64,
+}
 
 fn main() -> Result<(), Box<dyn Error + Sync + Send>> {
     let raw_data = std::fs::read_to_string("./182_PM_Peak_speeds.geojson")?;
@@ -10,20 +15,27 @@ fn main() -> Result<(), Box<dyn Error + Sync + Send>> {
     let new_bus_lane_stats = feature_collection
         .features
         .into_iter()
-        .map(|feature| {
-            let mut feature = feature;
+        .filter_map(|feature| {
+            let properties = feature.properties.as_ref().unwrap().clone();
 
-            let mut properties = feature.properties.as_ref().unwrap().clone();
+            match (
+                properties.get("p20_mph").unwrap(),
+                properties.get("route_short_name").unwrap(),
+            ) {
+                (JsonValue::String(p20_mph), JsonValue::String(route_short_name)) => {
+                    let p20_kmh = p20_mph.parse::<f64>().unwrap() * 1.609344;
 
-            if let JsonValue::String(p20_mph) = properties.get("p20_mph").unwrap() {
-                let p20_kmh = p20_mph.parse::<f64>().unwrap() * 1.609344;
-
-                properties.insert("p20_kmh".to_string(), p20_kmh.into());
+                    Some(CleanSegment {
+                        route_short_name: route_short_name.to_string(),
+                        p20_kmh,
+                    })
+                }
+                _ => None,
             }
-
-            feature
         })
-        .collect::<Vec<Feature>>();
+        //segments eligable for bus lanes are under 30 kmh
+        .filter(|x| x.p20_kmh < 30.)
+        .collect::<Vec<CleanSegment>>();
 
     Ok(())
 }
